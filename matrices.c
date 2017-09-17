@@ -14,32 +14,14 @@ matrix* matrixMul(matrix *m1, matrix *m2);
 matrix* matrixScalarMul(matrix *m, int scalar);
 matrix* matrixTrans(matrix *m);
 matrix* matrixSub(matrix *m, int row, int col);
+matrix* matrixIdentity(int rows);
 int matrixTrace(matrix *m);
 int matrixDet(matrix *m);
 int power(int base, int exp);
-void printMatrix(matrix *m);
+void matrixPrint(matrix *m);
 
 int main(void)
 {
-    int vals1[] = {4, 3, 1, 2};
-    int vals2[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    int vals3[] = {1, 2, 3, 4, 5, 24, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17};
-
-    matrix *m1 = matrixInit(2, 2, vals1);
-    //printMatrix(m1);
-    matrix *m2 = matrixInit(3, 3, vals2);
-    //printMatrix(m2);
-    matrix *m3 = matrixInit(4, 4, vals3);
-
-    printMatrix(matrixSub(m3, 1, 1));
-    //printf("Determinant of m1: %d\n", matrixDet(m1));
-    //printf("Determinant of m2: %d\n", matrixDet(m2));
-    //printf("Determinant of m3: %d\n", matrixDet(m3));
-
-    free(m1);
-    free(m2);
-    free(m3);
-
     return 0;
 }
 
@@ -52,7 +34,7 @@ int main(void)
 matrix* matrixInit(int rows, int cols, int *vals)
 {
     matrix *m;
-    m = malloc(1);
+    m = malloc(sizeof(matrix));
     (*m).rows = rows;
     (*m).cols = cols;
     (*m).vals = vals;
@@ -69,8 +51,8 @@ matrix* matrixEmpty(int rows, int cols)
 {
     matrix *m;
     int *vals;
-    m = malloc(1);
-    vals = malloc(rows*cols);
+    m = malloc(sizeof(matrix));
+    vals = malloc(sizeof(int)*rows*cols);
     (*m).rows = rows;
     (*m).cols = cols;
     (*m).vals = vals;
@@ -205,7 +187,6 @@ matrix* matrixSub(matrix *m, int row, int col)
         return m;
     }
 
-    //printf("\n");
     i = 0;
     for (n = 0; n < rows*cols; n++) {
         if ((n-col) % (cols) == 0) {
@@ -213,14 +194,29 @@ matrix* matrixSub(matrix *m, int row, int col)
         } else if (row*cols <= n && n < ((row+1)*cols)) {
             ;
         } else {
-            printf("i=%d n=%d m->vals[n]=%d\n", i, n, m->vals[n]);
             sub->vals[i] = m->vals[n];
             i++; // Only increment i when we've added to the sub-matrix
         }
     }
-    //printf("\n");
 
     return sub;
+}
+
+/* matrixIdentity
+ * Inputs: The number of rows (columns) that the  matrix is to contain
+ * Outputs: An identity matrix of the given size
+ */
+matrix* matrixIdentity(int rows)
+{
+    int i;
+    matrix *id = matrixEmpty(rows, rows);
+    for (i = 0; i < rows*rows; i++) {
+        id->vals[i] = 0;
+    }
+    for (i = 0; i < rows; i++) {
+        id->vals[i*rows+i] = 1;
+    }
+    return id;
 }
 
 /* matrixTrace
@@ -267,7 +263,12 @@ int matrixDet(matrix *m)
     return det;
 }
 
-int power(int base, int exp) {
+/* power
+ * Inputs: A base (positive or negative) and exponent (non-negative)
+ * Outputs: base^power
+ */
+int power(int base, int exp)
+{
     int result = base;
     if (exp == 0) {
         return 1;
@@ -278,16 +279,14 @@ int power(int base, int exp) {
     return result;
 }
 
-/* printMatrix
+/* matrixPrint
  * Inputs: A pointer to the matrix to be printed
  * Outputs: None, the matrix is printed with rough formatting
  */
-void printMatrix(matrix *m)
+void matrixPrint(matrix *m)
 {
     int rows = m->rows;
     int cols = m->cols;
-    printf("rows=%d cols=%d\n", rows, cols);
-    /*
     int i, j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
@@ -296,10 +295,6 @@ void printMatrix(matrix *m)
         printf("\n");
     }
     printf("\n");
-    */
-    for (rows = 0; rows < 9; rows++) {
-        printf("%d\n ", m->vals[rows]);
-    }
     return;
 }
 

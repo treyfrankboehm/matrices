@@ -8,12 +8,12 @@
 - Scalar multiplication
 - Transposition
 - Trace
+- Submatrix
+- Determinants
+- Identity matrices
 
 ### What needs to be done:
-- Determinants
-- Submatrix
 - Inverse
-- Identity matrices
 
 
 ### What I may do later:
