@@ -15,13 +15,25 @@ matrix* matrixScalarMul(matrix *m, int scalar);
 matrix* matrixTrans(matrix *m);
 matrix* matrixSub(matrix *m, int row, int col);
 matrix* matrixIdentity(int rows);
+matrix* matrixComatrix(matrix *m);
 int matrixTrace(matrix *m);
 int matrixDet(matrix *m);
+int matrixCofactor(matrix *m, int row, int col);
 int power(int base, int exp);
 void matrixPrint(matrix *m);
 
 int main(void)
 {
+    int vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
+    matrix* m = matrixInit(3, 3, vals);
+    int i, j;
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++) {
+            printf("%d, ", matrixCofactor(m, i, j));
+        }
+    }
+    matrixPrint(matrixComatrix(m));
+
     return 0;
 }
 
@@ -219,6 +231,25 @@ matrix* matrixIdentity(int rows)
     return id;
 }
 
+
+/* matrixComatrix
+ * Inputs: A pointer to a matrix
+ * Outputs: A matrix containing the cofactors of the input
+ */
+matrix* matrixComatrix(matrix *m)
+{
+    matrix *ret = matrixEmpty(m->rows, m->cols);
+    int i, j;
+    int co;
+    for (i = 0; i < m->cols; i++) {
+        for (j = 0; j < m->rows; j++) {
+            co = matrixCofactor(m, i, j);
+            ret->vals[i*m->cols+j] = co;
+        }
+    }
+    return ret;
+}
+
 /* matrixTrace
  * Inputs: A pointer to a square matrix
  * Outputs: The trace (sum of the diagonals) of that matrix. If a non-
@@ -261,6 +292,18 @@ int matrixDet(matrix *m)
         }
     }
     return det;
+}
+
+/* matrixCofactor
+ * Inputs: A pointer to a matrix, and the row and column containing the
+ *  element whose cofactor we want
+ * Output: The cofactor of the element specified
+ */
+int matrixCofactor(matrix *m, int row, int col)
+{
+    int co = matrixDet(matrixSub(m, row, col));
+    co *= power(-1, row+col);
+    return co;
 }
 
 /* power
