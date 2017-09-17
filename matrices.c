@@ -4,36 +4,31 @@
 typedef struct matrix_t {
     int rows;
     int cols;
-    int *vals;
+    double *vals;
 } matrix;
 
-matrix* matrixInit(int rows, int cols, int *vals);
+matrix* matrixInit(int rows, int cols, double *vals);
 matrix* matrixEmpty(int rows, int cols);
 matrix* matrixAdd(matrix *m1, matrix *m2);
 matrix* matrixMul(matrix *m1, matrix *m2);
-matrix* matrixScalarMul(matrix *m, int scalar);
+matrix* matrixScalarMul(matrix *m, double scalar);
 matrix* matrixTrans(matrix *m);
 matrix* matrixSub(matrix *m, int row, int col);
 matrix* matrixIdentity(int rows);
 matrix* matrixComatrix(matrix *m);
-int matrixTrace(matrix *m);
-int matrixDet(matrix *m);
-int matrixCofactor(matrix *m, int row, int col);
+matrix* matrixInverse(matrix *m);
+double matrixTrace(matrix *m);
+double matrixDet(matrix *m);
+double matrixCofactor(matrix *m, int row, int col);
 int power(int base, int exp);
 void matrixPrint(matrix *m);
+void allMatrixTests(void);
 
 int main(void)
 {
-    int vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
-    matrix* m = matrixInit(3, 3, vals);
-    int i, j;
-    for (i = 0; i < 3; i++) {
-        for (j = 0; j < 3; j++) {
-            printf("%d, ", matrixCofactor(m, i, j));
-        }
-    }
-    matrixPrint(matrixComatrix(m));
-
+    double vals[] = {5, 1, 2, 8, 5, 8, 1, 0, 9};
+    matrix *m = matrixInit(3, 3, vals);
+    matrixPrint(m);
     return 0;
 }
 
@@ -43,7 +38,7 @@ int main(void)
  *  values
  * Outputs: A pointer to a matrix containing that information
  */
-matrix* matrixInit(int rows, int cols, int *vals)
+matrix* matrixInit(int rows, int cols, double *vals)
 {
     matrix *m;
     m = malloc(sizeof(matrix));
@@ -62,9 +57,9 @@ matrix* matrixInit(int rows, int cols, int *vals)
 matrix* matrixEmpty(int rows, int cols)
 {
     matrix *m;
-    int *vals;
+    double *vals;
     m = malloc(sizeof(matrix));
-    vals = malloc(sizeof(int)*rows*cols);
+    vals = malloc(sizeof(double)*rows*cols);
     (*m).rows = rows;
     (*m).cols = cols;
     (*m).vals = vals;
@@ -85,7 +80,7 @@ matrix* matrixAdd(matrix *m1, matrix *m2)
     int size  = rows1*cols1;
     int n;
 
-    matrix* ret = matrixInit(rows1, cols1, m1->vals);
+    matrix* ret = matrixEmpty(rows1, cols1);
 
     if (rows1 != rows2 || cols1 != cols2) {
         free(ret);
@@ -111,13 +106,12 @@ matrix* matrixMul(matrix *m1, matrix *m2)
     int rows2 = m2->rows;
     int cols2 = m2->cols;
 
-    int row; // Iterator for rows in the first matrix
-    int col; // Iterater for columns in the second
-    int r;   // Iterator to pull elements from first/second in parallel
-    int p;   // Temporary storage for the element in the product matrix
+    int row;  // Iterator for rows in the first matrix
+    int col;  // Iterater for columns in the second
+    int r;    // Iterator to pull elements from first/second in parallel
+    double p; // Temporary storage for the element in the product matrix
 
     matrix* product = matrixEmpty(rows1, cols2);
-    product->vals[rows1*cols2] = 0;
 
     // Matrix multiplication is only defined when the number of columns
     // in the first matrix is the same as the number of rows in the
@@ -148,7 +142,7 @@ matrix* matrixMul(matrix *m1, matrix *m2)
  * Inputs: A pointer to a matrix and a scalar to multiply it
  * Outputs: The scalar product
  */
-matrix* matrixScalarMul(matrix *m, int scalar)
+matrix* matrixScalarMul(matrix *m, double scalar)
 {
     int rows = m->rows;
     int cols = m->cols;
@@ -240,7 +234,7 @@ matrix* matrixComatrix(matrix *m)
 {
     matrix *ret = matrixEmpty(m->rows, m->cols);
     int i, j;
-    int co;
+    double co;
     for (i = 0; i < m->cols; i++) {
         for (j = 0; j < m->rows; j++) {
             co = matrixCofactor(m, i, j);
@@ -250,16 +244,30 @@ matrix* matrixComatrix(matrix *m)
     return ret;
 }
 
+matrix* matrixInverse(matrix *m)
+{
+    double det = matrixDet(m);
+    matrix *inv = matrixComatrix(m);
+    if (det == 0) {
+        free(inv);
+        return m;
+    }
+
+    inv = matrixTrans(inv);
+    inv = matrixScalarMul(inv, 1/det);
+    return inv;
+}
+
 /* matrixTrace
  * Inputs: A pointer to a square matrix
  * Outputs: The trace (sum of the diagonals) of that matrix. If a non-
  *  square matrix is passed, return the largest possible 32-bit value.
  */
-int matrixTrace(matrix *m)
+double matrixTrace(matrix *m)
 {
     int rows = m->rows;
     int cols = m->cols;
-    int trace = 0;
+    double trace = 0;
     int n;
 
     if (rows != cols) {
@@ -274,12 +282,12 @@ int matrixTrace(matrix *m)
     return trace;
 }
 
-int matrixDet(matrix *m)
+double matrixDet(matrix *m)
 {
     int rows = m->rows;
     int cols = m->cols;
     int n;
-    int det;
+    double det;
 
     if (rows != cols) {
         return 0xffffffff;
@@ -299,9 +307,9 @@ int matrixDet(matrix *m)
  *  element whose cofactor we want
  * Output: The cofactor of the element specified
  */
-int matrixCofactor(matrix *m, int row, int col)
+double matrixCofactor(matrix *m, int row, int col)
 {
-    int co = matrixDet(matrixSub(m, row, col));
+    double co = matrixDet(matrixSub(m, row, col));
     co *= power(-1, row+col);
     return co;
 }
@@ -333,7 +341,7 @@ void matrixPrint(matrix *m)
     int i, j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
-            printf("%d\t", m->vals[cols*i+j]);
+            printf("%.3lf\t", m->vals[cols*i+j]);
         }
         printf("\n");
     }
@@ -341,3 +349,33 @@ void matrixPrint(matrix *m)
     return;
 }
 
+void allMatrixTests(void)
+{
+    double vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
+    double scalar = 2.5;
+    matrix* m = matrixInit(3, 3, vals);
+
+    printf("The matrix we're working with is:\n");
+    matrixPrint(m);
+    printf("\nThe matrix added to itself is:\n");
+    matrixPrint(matrixAdd(m, m));
+    printf("\nThe matrix multiplied by itself is:\n");
+    matrixPrint(matrixMul(m, m));
+    printf("\nThe matrix multiplied by %lf is:\n", scalar);
+    matrixPrint(matrixScalarMul(m, scalar));
+    printf("\nThe transposition of the matrix is:\n");
+    matrixPrint(matrixTrans(m));
+    printf("\nThe sub-matrix with the middle row/column removed is:\n");
+    matrixPrint(matrixSub(m, 1, 1));
+    printf("\nThe corresponding identity matrix is:\n");
+    matrixPrint(matrixIdentity(3));
+    printf("\nThe comatrix is:\n");
+    matrixPrint(matrixComatrix(m));
+    printf("\nThe inverse matrix is:\n");
+    matrixPrint(matrixInverse(m));
+    printf("\nThe trace is: %.3lf\n", matrixTrace(m));
+    printf("\nThe determinant is: %.3lf\n", matrixDet(m));
+
+    free(m);
+    return;
+}

@@ -11,11 +11,8 @@
 - Submatrix
 - Determinants
 - Identity matrices
-
-### What needs to be done:
 - Inverse
 
-
-### What I may do later:
+### What needs to be done:
 - Eigenvalues/eigenvectors
 

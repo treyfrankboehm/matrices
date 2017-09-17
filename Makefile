@@ -1,8 +1,21 @@
-test: clean matrices
-	./matrices
+PROGRAM = matrices
 
-matrices: matrices.c
-	gcc -Wall -g matrices.c -o matrices
+CC = gcc
+WFLAGS = -Wall
+SYMFLAGS = -g
+CFLAGS = $(WFLAGS) $(SYMFLAGS)
+
+SRCS = $(shell ls *.c)
+OBJS = $(SRCS:.c=.o)
+
+all: $(PROGRAM)
+
+$(PROGRAM): $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(PROGRAM)
+
+test: $(PROGRAM)
+	./$(PROGRAM)
 
 clean:
-	rm -f matrices
+	rm -f $(OBJS) $(PROGRAM)
+
