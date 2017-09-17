@@ -5,13 +5,13 @@
 ### What is done:
 - Addition
 - Multiplication
-
-### What needs to be done:
 - Scalar multiplication
 - Transposition
+- Trace
+
+### What needs to be done:
 - Determinants
 - Submatrix
-- Trace
 - Inverse
 - Identity matrices
 
