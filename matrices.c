@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct matrix_t {
     int rows;
@@ -23,12 +24,11 @@ double matrixCofactor(matrix *m, int row, int col);
 int power(int base, int exp);
 void matrixPrint(matrix *m);
 void allMatrixTests(void);
+void speedInversionTest(int numMatrices);
 
 int main(void)
 {
-    double vals[] = {5, 1, 2, 8, 5, 8, 1, 0, 9};
-    matrix *m = matrixInit(3, 3, vals);
-    matrixPrint(m);
+    speedInversionTest(1e6);
     return 0;
 }
 
@@ -377,5 +377,22 @@ void allMatrixTests(void)
     printf("\nThe determinant is: %.3lf\n", matrixDet(m));
 
     free(m);
+    return;
+}
+
+void speedInversionTest(int numMatrices)
+{
+    srand(time(NULL));
+    double values[9];
+    int i;
+    matrix *m = matrixInit(3, 3, values);
+    for (; numMatrices > 0; numMatrices--) {
+        // Generate 9 random numbers between 0 and 63
+        for (i = 0; i < 9; i++) {
+            m->vals[i] = (rand() % 64);
+        }
+        matrixInverse(m);
+        //matrixPrint(matrixInverse(m));
+    }
     return;
 }
