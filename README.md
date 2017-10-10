@@ -14,6 +14,6 @@
 - Inverse
 
 ### What needs to be done:
-- BETTER MEMORY MAGEMENT. Things need to be freed much more often that I have. I need to look into this before progressing.
+- Fix function implementations for better memory management. This is done for some but needs to continue.
 - Eigenvalues/eigenvectors
 
