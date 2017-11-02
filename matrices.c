@@ -5,14 +5,6 @@
 #define EMPTY &EMPTY_VALS
 static double EMPTY_VALS = {0};
 
-int main(void)
-{
-    //speedInversionTest(1);
-    allMatrixTests();
-    return 0;
-}
-
-
 /* matrixInit
  * Inputs: The number of rows and columns in a matrix, as well as its
  *  values
@@ -36,6 +28,20 @@ matrix* matrixInit(int rows, int cols, double *vals)
     }
     return dst;
 }
+
+void matrixRealloc(matrix *src, int rows, int cols)
+{
+    //int i;
+    (*src).rows = rows;
+    (*src).cols = cols;
+    free(src->vals);
+    (*src).vals = (double *)malloc(rows*cols*sizeof(double));
+    //for (i = 0; i < rows*cols; i++) {
+    //    (*src).vals[i] = 0;
+    //}
+    return;
+}
+
 
 
 /* matrixEmpty
@@ -95,9 +101,10 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
     int r;    // Iterator to pull elements from first/second in parallel
     double p; // Temporary storage for the element in the product matrix
 
-    // Matrix multiplication is only defined when the number of columns
-    // in the first matrix is the same as the number of rows in the
-    // second.
+    /* Matrix multiplication is only defined when the number of columns
+     * in the first matrix is the same as the number of rows in the
+     * second.
+     * */
     if (cols1 != rows2) {
         return;
     }
@@ -175,7 +182,7 @@ void matrixSub(matrix *dst, matrix *src, int row, int col)
         } else if (row*cols <= n && n < ((row+1)*cols)) {
             ;
         } else {
-            dst->vals[i] = dst->vals[n];
+            dst->vals[i] = src->vals[n];
             i++; // Only increment i when we've added to the sub-matrix
         }
     }
@@ -201,7 +208,6 @@ void matrixIdentity(matrix *dst, int rows)
  * Inputs: A pointer to a matrix
  * Outputs: A matrix containing the cofactors of the input
  */
-/*
 void matrixComatrix(matrix *dst, matrix *src)
 {
     int i, j;
@@ -209,28 +215,24 @@ void matrixComatrix(matrix *dst, matrix *src)
     for (i = 0; i < src->cols; i++) {
         for (j = 0; j < src->rows; j++) {
             co = matrixCofactor(src, i, j);
-            dst->vals[i*(src->cols+j)] = co;
+            dst->vals[i*(src->cols)+j] = co;
         }
     }
-    return ret;
 }
-*/
 
-/*
 void matrixInverse(matrix *dst, matrix *src)
 {
-    double det = matrixDet(m);
-    matrix *inv = matrixComatrix(m);
+    double det = matrixDet(src);
+    matrix* trans = matrixInit(src->cols, dst->cols, EMPTY);
+    matrixComatrix(dst, src);
     if (det == 0) {
-        free(inv);
-        return m;
+        return;
     }
 
-    inv = matrixTrans(inv);
-    inv = matrixScalarMul(inv, 1/det);
-    return inv;
+    matrixTrans(trans, dst);
+    matrixScalarMul(dst, trans, 1/det);
+    matrixDestroy(trans);
 }
-*/
 
 /* matrixTrace
  * Inputs: A pointer to a square matrix
@@ -256,41 +258,47 @@ double matrixTrace(matrix *src)
     return trace;
 }
 
-/*
 double matrixDet(matrix *src)
 {
-    int rows = m->rows;
-    int cols = m->cols;
+    int rows = src->rows;
+    int cols = src->cols;
     int n;
     double det;
+    matrix *tempSub;
 
     if (rows != cols) {
-        return 0xffffffff;
+        return 0xdeafbeef;
     } else if (rows == 2) {
-        return (m->vals[0]*m->vals[3]) - (m->vals[1]*m->vals[2]);
+        /* The definition of the determinant for a 2x2 matrix */
+        return (src->vals[0]*src->vals[3]) - (src->vals[1]*src->vals[2]);
     } else {
         det = 0;
         for (n = 0; n < cols; n++) {
-            det += m->vals[n]*power(-1, n)*matrixDet(matrixSub(m, 0, n));
+            /* Reduce the rank */
+            tempSub = matrixInit(rows-1, cols-1, EMPTY);
+            matrixSub(tempSub, src, 0, n);
+            det += src->vals[n]*power(-1, n)*matrixDet(tempSub);
+            //det += m->vals[n]*power(-1, n)*matrixDet(matrixSub(m, 0, n));
+            matrixDestroy(tempSub);
         }
     }
     return det;
 }
-*/
 
 /* matrixCofactor
  * Inputs: A pointer to a matrix, and the row and column containing the
  *  element whose cofactor we want
  * Output: The cofactor of the element specified
  */
-/*
 double matrixCofactor(matrix *src, int row, int col)
 {
-    double co = matrixDet(matrixSub(m, row, col));
+    matrix* sub = matrixInit(src->rows-1, src->cols-1, EMPTY);
+    matrixSub(sub, src, row, col);
+    double co = matrixDet(sub);
+    matrixDestroy(sub);
     co *= power(-1, row+col);
     return co;
 }
-*/
 
 /* power
  * Inputs: A base (positive or negative) and exponent (non-negative)
@@ -357,45 +365,41 @@ void allMatrixTests(void)
     printf("\nThe transposition of the matrix is:\n");
     matrixTrans(n, m);
     matrixPrint(n);
-    /*
     printf("\nThe sub-matrix with the middle row/column removed is:\n");
-    n = matrixSub(m, 1, 1);
+    matrixSub(n, m, 1, 1);
     matrixPrint(n);
     printf("\nThe corresponding identity matrix is:\n");
-    n = matrixIdentity(3);
+    matrixIdentity(n, 3);
     matrixPrint(n);
     printf("\nThe comatrix is:\n");
-    n = matrixComatrix(m);
+    matrixComatrix(n, m);
     matrixPrint(n);
     printf("\nThe inverse matrix is:\n");
-    n = matrixInverse(m);
+    matrixInverse(n, m);
     matrixPrint(n);
     printf("\nThe trace is: %.3lf\n", matrixTrace(m));
     printf("\nThe determinant is: %.3lf\n", matrixDet(m));
-    */
 
     matrixDestroy(m);
     matrixDestroy(n);
     return;
 }
 
-/*
 void speedInversionTest(int numMatrices)
 {
     srand(time(NULL));
-    double values[9];
     int i;
-    matrix *m = matrixInit(3, 3, values);
+    matrix *m = matrixInit(3, 3, EMPTY);
+    matrix *n = matrixInit(3, 3, EMPTY);
     for (; numMatrices > 0; numMatrices--) {
         // Generate 9 random numbers between 0 and 63
         for (i = 0; i < 9; i++) {
             m->vals[i] = (rand() % 64);
         }
-        matrixInverse(m);
-        //matrixPrint(matrixInverse(m));
+        matrixInverse(n, m);
     }
-    free(m);
+    matrixDestroy(m);
+    matrixDestroy(n);
     return;
 }
-*/
 
