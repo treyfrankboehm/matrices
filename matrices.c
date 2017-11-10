@@ -1,6 +1,6 @@
 #include "matrices.h"
 
-
+#define DOUBLE_ERROR_MARGIN 1e-15
 /* Temporary fix for initializing a matrix without passing values */
 #define EMPTY &EMPTY_VALS
 static double EMPTY_VALS = {0};
@@ -236,8 +236,8 @@ void matrixInverse(matrix *dst, matrix *src)
 
 /* matrixTrace
  * Inputs: A pointer to a square matrix
- * Outputs: The trace (sum of the diagonals) of that matrix. If a non-
- *  square matrix is passed, return the largest possible 32-bit value.
+ * Outputs: The trace (sum of the diagonal) of that matrix. If a non-
+ *  square matrix is passed, return a magic number.
  */
 double matrixTrace(matrix *src)
 {
@@ -252,7 +252,6 @@ double matrixTrace(matrix *src)
 
     for (n = 0; n < cols; n++) {
         trace += src->vals[n+n*cols];
-        trace += src->vals[n*cols-n];
     }
 
     return trace;
@@ -300,13 +299,31 @@ double matrixCofactor(matrix *src, int row, int col)
     return co;
 }
 
+
+double* matrixEigenvalues(matrix *src)
+{
+    double gap;
+    if (src->rows != src->cols) {
+        return NULL;
+    }
+    else if (src->rows == 2) {
+        double* eigs = (double*)malloc(sizeof(double)*2);
+        //gap = sqrtIt(power(matrixTrace(src), 2)-4*matrixDet(src));
+        gap = sqrtIt(matrixTrace(src)*matrixTrace(src)-4*matrixDet(src));
+        eigs[0] = (matrixTrace(src)+gap)/2;
+        eigs[1] = (matrixTrace(src)-gap)/2;
+        return eigs;
+    }
+    return NULL;
+}
+
 /* power
  * Inputs: A base (positive or negative) and exponent (non-negative)
  * Outputs: base^power
  */
-int power(int base, int exp)
+double power(double base, int exp)
 {
-    int result = base;
+    double result = base;
     if (exp == 0) {
         return 1;
     }
@@ -314,6 +331,48 @@ int power(int base, int exp)
         result *= base;
     }
     return result;
+}
+
+/* sqrtIt
+ * Inputs: A number whose square root we want to find
+ * Outputs: The square root of the input, 'x'.
+ */
+double sqrtIt(double x)
+{
+    double tmp;
+    double square;
+    double high_guess = x;
+    double low_guess = 0;
+    while (1) {
+        tmp = (high_guess + low_guess)/2;
+        square = tmp*tmp;
+        if (isEqual(square, x)) {
+            return tmp;
+        }
+        if (x < 1 && high_guess <= x) {
+            high_guess = 1;
+        } else if (square < x) {
+            low_guess = tmp;
+        } else {
+            high_guess = tmp;
+        }
+    }
+}
+
+/* isEqual
+ * Inputs: Two doubles, x and y
+ * Outputs: true if the doubles are within DOUBLE_ERROR_MARGIN from one
+ *  another, otherwise false.
+ * */
+int isEqual(double x, double y)
+{
+    double larger = x < y ? y : x;
+    double smaller = x < y ? x : y;
+    double average = (larger+smaller)/2;
+    if ((larger - smaller)/average <= DOUBLE_ERROR_MARGIN) {
+        return 1;
+    }
+    return 0;
 }
 
 /* matrixPrint
@@ -347,9 +406,12 @@ void matrixDestroy(matrix *src)
 void allMatrixTests(void)
 {
     double vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
+    double vals2[] = {4, 3, -2, -3};
     double scalar = 2.5;
+    double* eigs;
     matrix *m = matrixInit(3, 3, vals);
     matrix *n = matrixInit(3, 3, EMPTY);
+    matrix *p = matrixInit(2, 2, vals2);
 
     printf("The matrix we're working with is:\n");
     matrixPrint(m);
@@ -379,9 +441,15 @@ void allMatrixTests(void)
     matrixPrint(n);
     printf("\nThe trace is: %.3lf\n", matrixTrace(m));
     printf("\nThe determinant is: %.3lf\n", matrixDet(m));
+    printf("\nNow consider the matrix:\n");
+    matrixPrint(p);
+    eigs = matrixEigenvalues(p);
+    printf("\nThe eigenvalues are %g and %g.\n", eigs[0], eigs[1]);
 
     matrixDestroy(m);
     matrixDestroy(n);
+    matrixDestroy(p);
+    free(eigs);
     return;
 }
 

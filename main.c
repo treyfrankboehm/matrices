@@ -3,7 +3,8 @@
 
 int main(void)
 {
-    speedInversionTest(1e6);
+    allMatrixTests();
+    //speedInversionTest(1e6);
     return 0;
 }
 
