@@ -29,21 +29,6 @@ matrix* matrixInit(int rows, int cols, double *vals)
     return dst;
 }
 
-void matrixRealloc(matrix *src, int rows, int cols)
-{
-    //int i;
-    (*src).rows = rows;
-    (*src).cols = cols;
-    free(src->vals);
-    (*src).vals = (double *)malloc(rows*cols*sizeof(double));
-    //for (i = 0; i < rows*cols; i++) {
-    //    (*src).vals[i] = 0;
-    //}
-    return;
-}
-
-
-
 /* matrixEmpty
  * Inputs: The number of rows and columns in a matrix
  * Outputs: A pointer to a matrix with enough space for rows*cols values
@@ -139,7 +124,7 @@ void matrixScalarMul(matrix *dst, matrix *src, double scalar)
         dst->vals[n] = scalar*(src->vals[n]);
     }
     return;
-} 
+}
 
 
 /* matrixTrans
@@ -308,7 +293,6 @@ double* matrixEigenvalues(matrix *src)
     }
     else if (src->rows == 2) {
         double* eigs = (double*)malloc(sizeof(double)*2);
-        //gap = sqrtIt(power(matrixTrace(src), 2)-4*matrixDet(src));
         gap = sqrtIt(matrixTrace(src)*matrixTrace(src)-4*matrixDet(src));
         eigs[0] = (matrixTrace(src)+gap)/2;
         eigs[1] = (matrixTrace(src)-gap)/2;
