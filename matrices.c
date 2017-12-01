@@ -1,23 +1,27 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <complex.h>
+#include <time.h>
 #include "matrices.h"
 
-#define DOUBLE_ERROR_MARGIN 1e-15
+#define EPSILON 1e-15
 /* Temporary fix for initializing a matrix without passing values */
 #define EMPTY &EMPTY_VALS
-static double EMPTY_VALS = {0};
+static mtype EMPTY_VALS = {0};
 
 /* matrixInit
  * Inputs: The number of rows and columns in a matrix, as well as its
  *  values
  * Outputs: A pointer to a matrix containing that information
  */
-matrix* matrixInit(int rows, int cols, double *vals)
+matrix* matrixInit(int rows, int cols, mtype *vals)
 {
     int i;
     matrix *dst = malloc(sizeof(matrix));
     (*dst).rows = rows;
     (*dst).cols = cols;
-    (*dst).vals = (double *)malloc(rows*cols*sizeof(double));
-    if (sizeof(vals) == sizeof(double) && vals[0] == 0) {
+    (*dst).vals = (mtype *)malloc(rows*cols*sizeof(mtype));
+    if (sizeof(vals) == sizeof(mtype) && vals[0] == 0) {
         for (i = 0; i < rows*cols; i++) {
             (*dst).vals[i] = 0;
         }
@@ -36,8 +40,8 @@ matrix* matrixInit(int rows, int cols, double *vals)
  */
 void matrixEmpty(matrix *dst, int rows, int cols)
 {
-    double *vals;
-    vals = malloc(sizeof(double)*rows*cols);
+    mtype *vals;
+    vals = malloc(sizeof(mtype)*rows*cols);
     (*dst).rows = rows;
     (*dst).cols = cols;
     (*dst).vals = vals;
@@ -81,10 +85,10 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
     int rows2 = src2->rows;
     int cols2 = src2->cols;
 
-    int row;  // Iterator for rows in the first matrix
-    int col;  // Iterater for columns in the second
-    int r;    // Iterator to pull elements from first/second in parallel
-    double p; // Temporary storage for the element in the product matrix
+    int row;  /* Iterator for rows in the first matrix */
+    int col;  /* Iterater for columns in the second */
+    int r;    /* Iterator to pull elements from first/second in parallel */
+    mtype p;  /* Temporary storage for the element in the product matrix */
 
     /* Matrix multiplication is only defined when the number of columns
      * in the first matrix is the same as the number of rows in the
@@ -94,16 +98,16 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
         return;
     }
 
-    // We look at each individual row in the first matrix
+    /* We look at each individual row in the first matrix */
     for (row = 0; row < rows1; row++) {
-        // and each individual column in the second
+        /* and each individual column in the second */
         for (col = 0; col < cols2; col++) {
             p = 0;
-            // Now get the sum of products for corresponding elements
+            /* Now get the sum of products for corresponding elements */
             for (r = 0; r < cols1; r++) {
                 p += (src1->vals[row*cols1+r] * src2->vals[r*cols2+col]);
             }
-            // and write that into our "product" matrix to be returned.
+            /* and write that into our "product" matrix to be returned. */
             dst->vals[row*cols2+col] = p;
         }
     }
@@ -114,7 +118,7 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
  * Inputs: A pointer to a matrix and a scalar to multiply it
  * Outputs: The scalar product
  */
-void matrixScalarMul(matrix *dst, matrix *src, double scalar)
+void matrixScalarMul(matrix *dst, matrix *src, mtype scalar)
 {
     int rows = src->rows;
     int cols = src->cols;
@@ -153,8 +157,8 @@ void matrixSub(matrix *dst, matrix *src, int row, int col)
 {
     int rows = src->rows;
     int cols = src->cols;
-    int i; // The counter for elements being put into the sub-matrix
-    int n; // The counter for elements being taken from the main matrix
+    int i; /* The counter for elements being put into the sub-matrix    */
+    int n; /* The counter for elements being taken from the main matrix */
 
     if (row > rows || col > cols) {
         return;
@@ -168,7 +172,7 @@ void matrixSub(matrix *dst, matrix *src, int row, int col)
             ;
         } else {
             dst->vals[i] = src->vals[n];
-            i++; // Only increment i when we've added to the sub-matrix
+            i++; /* Only increment i when we've added to the sub-matrix */
         }
     }
 }
@@ -196,7 +200,7 @@ void matrixIdentity(matrix *dst, int rows)
 void matrixComatrix(matrix *dst, matrix *src)
 {
     int i, j;
-    double co;
+    mtype co;
     for (i = 0; i < src->cols; i++) {
         for (j = 0; j < src->rows; j++) {
             co = matrixCofactor(src, i, j);
@@ -207,7 +211,7 @@ void matrixComatrix(matrix *dst, matrix *src)
 
 void matrixInverse(matrix *dst, matrix *src)
 {
-    double det = matrixDet(src);
+    mtype det = matrixDet(src);
     matrix* trans = matrixInit(src->cols, dst->cols, EMPTY);
     matrixComatrix(dst, src);
     if (det == 0) {
@@ -224,11 +228,11 @@ void matrixInverse(matrix *dst, matrix *src)
  * Outputs: The trace (sum of the diagonal) of that matrix. If a non-
  *  square matrix is passed, return a magic number.
  */
-double matrixTrace(matrix *src)
+mtype matrixTrace(matrix *src)
 {
     int rows = src->rows;
     int cols = src->cols;
-    double trace = 0;
+    mtype trace = 0;
     int n;
 
     if (rows != cols) {
@@ -242,12 +246,12 @@ double matrixTrace(matrix *src)
     return trace;
 }
 
-double matrixDet(matrix *src)
+mtype matrixDet(matrix *src)
 {
     int rows = src->rows;
     int cols = src->cols;
     int n;
-    double det;
+    mtype det;
     matrix *tempSub;
 
     if (rows != cols) {
@@ -262,7 +266,6 @@ double matrixDet(matrix *src)
             tempSub = matrixInit(rows-1, cols-1, EMPTY);
             matrixSub(tempSub, src, 0, n);
             det += src->vals[n]*power(-1, n)*matrixDet(tempSub);
-            //det += m->vals[n]*power(-1, n)*matrixDet(matrixSub(m, 0, n));
             matrixDestroy(tempSub);
         }
     }
@@ -274,40 +277,57 @@ double matrixDet(matrix *src)
  *  element whose cofactor we want
  * Output: The cofactor of the element specified
  */
-double matrixCofactor(matrix *src, int row, int col)
+mtype matrixCofactor(matrix *src, int row, int col)
 {
     matrix* sub = matrixInit(src->rows-1, src->cols-1, EMPTY);
     matrixSub(sub, src, row, col);
-    double co = matrixDet(sub);
+    mtype co = matrixDet(sub);
     matrixDestroy(sub);
     co *= power(-1, row+col);
     return co;
 }
 
 
-double* matrixEigenvalues(matrix *src)
+mtype* matrixEigenvalues(matrix *src)
 {
-    double gap;
+    mtype gap;
+    mtype mtrace;
     if (src->rows != src->cols) {
         return NULL;
-    }
-    else if (src->rows == 2) {
-        double* eigs = (double*)malloc(sizeof(double)*2);
-        gap = sqrtIt(matrixTrace(src)*matrixTrace(src)-4*matrixDet(src));
-        eigs[0] = (matrixTrace(src)+gap)/2;
-        eigs[1] = (matrixTrace(src)-gap)/2;
+    } else if (src->rows == 2) {
+        mtrace = matrixTrace(src);
+        mtype* eigs = (mtype*)malloc(sizeof(mtype)*2);
+        gap = sqrtIt(mtrace*mtrace-4*matrixDet(src));
+        eigs[0] = (mtrace+gap)/2;
+        eigs[1] = (mtrace-gap)/2;
         return eigs;
     }
     return NULL;
 }
 
+/*
+mtype vectorNorm(matrix *src)
+{
+    mtype total = 0;
+    for (i = 0; i < src->cols; i++) {
+        total += src->vals[i]*src->vals[i];
+    }
+    return sqrtIt(total);
+}
+
+void matrixPowerIteration(matrix *dst, matrix *src)
+{
+
+}
+*/
+
 /* power
  * Inputs: A base (positive or negative) and exponent (non-negative)
  * Outputs: base^power
  */
-double power(double base, int exp)
+complex power(complex base, int exp)
 {
-    double result = base;
+    mtype result = base;
     if (exp == 0) {
         return 1;
     }
@@ -321,8 +341,10 @@ double power(double base, int exp)
  * Inputs: A number whose square root we want to find
  * Outputs: The square root of the input, 'x'.
  */
-double sqrtIt(double x)
+complex sqrtIt(double x)
 {
+    int sign = x >= 0 ? 1 : -1;
+    x = x*sign;
     double tmp;
     double square;
     double high_guess = x;
@@ -331,7 +353,7 @@ double sqrtIt(double x)
         tmp = (high_guess + low_guess)/2;
         square = tmp*tmp;
         if (isEqual(square, x)) {
-            return tmp;
+            return sign == 1 ? tmp : tmp*1j;
         }
         if (x < 1 && high_guess <= x) {
             high_guess = 1;
@@ -345,18 +367,45 @@ double sqrtIt(double x)
 
 /* isEqual
  * Inputs: Two doubles, x and y
- * Outputs: true if the doubles are within DOUBLE_ERROR_MARGIN from one
+ * Outputs: true if the doubles are within EPSILON from one
  *  another, otherwise false.
  * */
 int isEqual(double x, double y)
 {
     double larger = x < y ? y : x;
     double smaller = x < y ? x : y;
-    double average = (larger+smaller)/2;
-    if ((larger - smaller)/average <= DOUBLE_ERROR_MARGIN) {
-        return 1;
+    return (larger - smaller) <= EPSILON;
+}
+
+/* printc
+ * Inputs: A complex number, c
+ * Outputs: None. Prints c to stdout.
+ */
+void printc(complex c)
+{
+    double re = creal(c);
+    double im = cimag(c);
+    int imsign = 1;
+
+    if (im < 0) { imsign = -1; }
+    im = im*imsign;
+
+    if (isEqual(im, 0)) {
+        printf("%.3g", re);
+    } else if (isEqual(re, 0)) {
+        if (imsign == -1) {
+            printf("-j%.3g", im);
+        } else {
+            printf("j%.3g", im);
+        }
+    } else {
+        printf("%.3g ", re);
+        if (imsign == -1) {
+            printf("-j%.3g", im);
+        } else {
+            printf("+j%.3g", im);
+        }
     }
-    return 0;
 }
 
 /* matrixPrint
@@ -370,11 +419,12 @@ void matrixPrint(matrix *src)
     int i, j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
-            printf("%.3lg\t", src->vals[cols*i+j]);
+            printc(src->vals[cols*i+j]);
+            putchar('\t');
         }
-        printf("\n");
+        putchar('\n');
     }
-    printf("\n");
+    putchar('\n');
     return;
 }
 
@@ -389,10 +439,11 @@ void matrixDestroy(matrix *src)
 
 void allMatrixTests(void)
 {
-    double vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
-    double vals2[] = {4, 3, -2, -3};
-    double scalar = 2.5;
-    double* eigs;
+    mtype vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
+    /*mtype vals2[] = {4, 3, -2, -3};*/
+    mtype vals2[] = {2, 13, -1, -2};
+    mtype scalar = 2.5;
+    mtype* eigs;
     matrix *m = matrixInit(3, 3, vals);
     matrix *n = matrixInit(3, 3, EMPTY);
     matrix *p = matrixInit(2, 2, vals2);
@@ -405,7 +456,7 @@ void allMatrixTests(void)
     printf("\nThe matrix multiplied by itself is:\n");
     matrixMul(n, m, m);
     matrixPrint(n);
-    printf("\nThe matrix multiplied by %lf is:\n", scalar);
+    printf("\nThe matrix multiplied by %g+j%g is:\n", creal(scalar), cimag(scalar));
     matrixScalarMul(n, m, scalar);
     matrixPrint(n);
     printf("\nThe transposition of the matrix is:\n");
@@ -423,12 +474,18 @@ void allMatrixTests(void)
     printf("\nThe inverse matrix is:\n");
     matrixInverse(n, m);
     matrixPrint(n);
-    printf("\nThe trace is: %.3lf\n", matrixTrace(m));
-    printf("\nThe determinant is: %.3lf\n", matrixDet(m));
-    printf("\nNow consider the matrix:\n");
+    printf("\nThe trace is: ");
+    printc(matrixTrace(m));
+    printf("\n\nThe determinant is: ");
+    printc(matrixDet(m));
+    printf("\n\nConsider the matrix:\n");
     matrixPrint(p);
     eigs = matrixEigenvalues(p);
-    printf("\nThe eigenvalues are %g and %g.\n", eigs[0], eigs[1]);
+    printf("\nThe eigenvalues are: ");
+    printc(eigs[0]);
+    printf(" and ");
+    printc(eigs[1]);
+    printf("\n");
 
     matrixDestroy(m);
     matrixDestroy(n);
@@ -444,7 +501,7 @@ void speedInversionTest(int numMatrices)
     matrix *m = matrixInit(3, 3, EMPTY);
     matrix *n = matrixInit(3, 3, EMPTY);
     for (; numMatrices > 0; numMatrices--) {
-        // Generate 9 random numbers between 0 and 63
+        /* Generate 9 random numbers between 0 and 63 */
         for (i = 0; i < 9; i++) {
             m->vals[i] = (rand() % 64);
         }
