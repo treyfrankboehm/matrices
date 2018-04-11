@@ -89,12 +89,15 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
     int col;  /* Iterater for columns in the second */
     int r;    /* Iterator to pull elements from first/second in parallel */
     mtype p;  /* Temporary storage for the element in the product matrix */
+    /* tmp_vals allows you to do something like b = A*b */
+    mtype* tmp_vals = (mtype*)malloc(sizeof(mtype)*rows1*cols2);
 
     /* Matrix multiplication is only defined when the number of columns
      * in the first matrix is the same as the number of rows in the
      * second.
      * */
     if (cols1 != rows2) {
+        free(tmp_vals);
         return;
     }
 
@@ -108,9 +111,16 @@ void matrixMul(matrix *dst, matrix *src1, matrix *src2)
                 p += (src1->vals[row*cols1+r] * src2->vals[r*cols2+col]);
             }
             /* and write that into our "product" matrix to be returned. */
-            dst->vals[row*cols2+col] = p;
+            tmp_vals[row*cols2+col] = p;
+            //dst->vals[row*cols2+col] = p;
         }
     }
+
+    for (r = 0; r < rows1*cols2; r++) {
+        dst->vals[r] = tmp_vals[r];
+    }
+    free(tmp_vals);
+
     return;
 }
 
@@ -223,6 +233,16 @@ void matrixInverse(matrix *dst, matrix *src)
     matrixDestroy(trans);
 }
 
+void matrixConjTrans(matrix *dst, matrix *src)
+{
+    int i;
+    int elems = src->rows*src->cols;
+    matrixTrans(dst, src);
+    for (i = 0; i < elems; i++) {
+        dst->vals[i] = conj(dst->vals[i]);
+    }
+}
+
 /* matrixTrace
  * Inputs: A pointer to a square matrix
  * Outputs: The trace (sum of the diagonal) of that matrix. If a non-
@@ -297,7 +317,7 @@ mtype* matrixEigenvalues(matrix *src)
     } else if (src->rows == 2) {
         mtrace = matrixTrace(src);
         mtype* eigs = (mtype*)malloc(sizeof(mtype)*2);
-        gap = sqrtIt(mtrace*mtrace-4*matrixDet(src));
+        gap = csqrt(mtrace*mtrace-4*matrixDet(src));
         eigs[0] = (mtrace+gap)/2;
         eigs[1] = (mtrace-gap)/2;
         return eigs;
@@ -305,27 +325,56 @@ mtype* matrixEigenvalues(matrix *src)
     return NULL;
 }
 
-/*
+
+/* vectorNorm
+ * Inputs: A pointer to a vector (matrix)
+ * Outputs: The Euclidean norm of the vector.
+ */
 mtype vectorNorm(matrix *src)
 {
     mtype total = 0;
+    int i;
     for (i = 0; i < src->cols; i++) {
         total += src->vals[i]*src->vals[i];
     }
-    return sqrtIt(total);
+    return csqrt(total);
 }
 
-void matrixPowerIteration(matrix *dst, matrix *src)
+/* matrixPowerIteration
+ * Inputs: A pointer to a vector (matrix), and the matrix whose dominant
+ *  eigenvalue/vector to find.
+ * Outputs: Returns the dominant eigenvalue and puts the dominant
+ *  eigenvector in b.
+ */
+mtype matrixPowerIteration(matrix *b, matrix *src)
 {
-
+    int i;
+    mtype eigval;
+    matrix *bstar = matrixInit(1, src->cols, EMPTY);
+    matrix *numerator = matrixInit(1, 1, EMPTY);
+    matrix *denominator = matrixInit(1, 1, EMPTY);
+    /* First, find the dominant eigenvector */
+    for (i = 0; i < 20; i++) {
+        matrixMul(b, src, b);
+        matrixScalarMul(b, b, 1/vectorNorm(b));
+    }
+    /* Now, get its associated eigenvalue */
+    matrixConjTrans(bstar, b); /* bstar = matrixConjTrans(b) */
+    matrixMul(denominator, bstar, b); /* denominator = bstar*b */
+    matrixMul(bstar, bstar, src); /* bstar = bstar*src */
+    matrixMul(numerator, bstar, b); /* numerator = bstar*src*b */
+    eigval = numerator->vals[0]/denominator->vals[0];
+    matrixDestroy(bstar);
+    matrixDestroy(numerator);
+    matrixDestroy(denominator);
+    return eigval;
 }
-*/
 
 /* power
  * Inputs: A base (positive or negative) and exponent (non-negative)
  * Outputs: base^power
  */
-complex power(complex base, int exp)
+mtype power(mtype base, int exp)
 {
     mtype result = base;
     if (exp == 0) {
@@ -341,7 +390,7 @@ complex power(complex base, int exp)
  * Inputs: A number whose square root we want to find
  * Outputs: The square root of the input, 'x'.
  */
-complex sqrtIt(double x)
+mtype sqrtIt(double x)
 {
     int sign = x >= 0 ? 1 : -1;
     x = x*sign;
@@ -381,7 +430,7 @@ int isEqual(double x, double y)
  * Inputs: A complex number, c
  * Outputs: None. Prints c to stdout.
  */
-void printc(complex c)
+void printc(mtype c)
 {
     double re = creal(c);
     double im = cimag(c);
@@ -391,19 +440,19 @@ void printc(complex c)
     im = im*imsign;
 
     if (isEqual(im, 0)) {
-        printf("%.3g", re);
+        printf("%.6g", re);
     } else if (isEqual(re, 0)) {
         if (imsign == -1) {
-            printf("-j%.3g", im);
+            printf("-j%.6g", im);
         } else {
-            printf("j%.3g", im);
+            printf("j%.6g", im);
         }
     } else {
-        printf("%.3g ", re);
+        printf("%.6g ", re);
         if (imsign == -1) {
-            printf("-j%.3g", im);
+            printf("-j%.6g", im);
         } else {
-            printf("+j%.3g", im);
+            printf("+j%.6g", im);
         }
     }
 }
@@ -510,5 +559,24 @@ void speedInversionTest(int numMatrices)
     matrixDestroy(m);
     matrixDestroy(n);
     return;
+}
+
+void powerItTest(void)
+{
+    mtype vals[] = {1, 4, 7, 3, 0, 5, -1, 9, 11};
+    mtype start_vals[] = {1, 1, 1}; /* Arbitrary, non-zero */
+    mtype eigval;
+    matrix *A = matrixInit(3, 3, vals);
+    matrix *b = matrixInit(3, 1, start_vals);
+    matrixPrint(A);
+    matrixPrint(b);
+    eigval = matrixPowerIteration(b, A);
+    matrixPrint(b);
+    matrixScalarMul(b, b, 1/b->vals[2]);
+    matrixPrint(b);
+    printc(eigval);
+    putchar('\n');
+    matrixDestroy(A);
+    matrixDestroy(b);
 }
 

@@ -3,7 +3,7 @@ PROGRAM = matrices
 CC = gcc
 WFLAGS = -Wall
 SYMFLAGS = -g
-CFLAGS = $(WFLAGS) $(SYMFLAGS)
+CFLAGS = $(WFLAGS) $(SYMFLAGS) -lm
 VGLOG   = valgrind.log
 VGFLAGS = --leak-check=full --log-file=$(VGLOG)
 VG = valgrind
@@ -26,5 +26,5 @@ memtest: $(PROGRAM)
 
 clean:
 	@echo "  CLEANING    "
-	@rm -f $(OBJS) $(PROGRAM)
+	@rm -f $(OBJS) $(PROGRAM) $(VGLOG) 
 

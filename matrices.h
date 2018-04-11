@@ -6,7 +6,7 @@
 #include <complex.h> // complex datatype
 #include <time.h>    // To generate a random seed
 
-typedef complex mtype;
+typedef double complex mtype;
 
 typedef struct matrix_t {
     int rows;
@@ -24,20 +24,22 @@ void matrixSub(matrix *dst, matrix *src, int row, int col);
 void matrixIdentity(matrix *dst, int rows);
 void matrixComatrix(matrix *dst, matrix *src);
 void matrixInverse(matrix *dst, matrix *src);
+void matrixConjTrans(matrix *dst, matrix *src);
 mtype matrixTrace(matrix *src);
 mtype matrixDet(matrix *src);
 mtype matrixCofactor(matrix *src, int row, int col);
 mtype* matrixEigenvalues(matrix *src);
-mtype vectorNorm(matrix *dst, matrix *src);
-void matrixPowerIteration(matrix *dst, matrix *src);
-complex power(complex base, int exp);
-complex sqrtIt(double x);
+mtype vectorNorm(matrix *src);
+mtype matrixPowerIteration(matrix *dst, matrix *src);
+mtype power(mtype base, int exp);
+mtype sqrtIt(double x);
 int isEqual(double x, double y);
-void printc(complex c);
+void printc(mtype c);
 void matrixPrint(matrix *src);
 void matrixDestroy(matrix *src);
 void allMatrixTests(void);
 void speedInversionTest(int numMatrices);
+void powerItTest(void);
 
 #endif
 
